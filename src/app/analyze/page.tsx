@@ -55,6 +55,10 @@ export default function AnalyzePage() {
     }
 
     try {
+      if (file.size > 4.5 * 1024 * 1024) {
+        throw new Error("File is too large! Vercel's free tier limits uploads to 4.5MB. Please upload a smaller audio file or compress your video.");
+      }
+
       const formData = new FormData();
       formData.append("file", file);
       formData.append("role", role);
@@ -64,10 +68,18 @@ export default function AnalyzePage() {
         body: formData,
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (err) {
+        if (response.status === 413) {
+          throw new Error("File is too large! Vercel's free tier limits uploads to 4.5MB.");
+        }
+        throw new Error("Server returned an unexpected response. The file might be too large or the server timed out.");
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || "Analysis failed");
+        throw new Error(data?.error || "Analysis failed");
       }
 
       if (data.databaseId) {
@@ -165,7 +177,7 @@ export default function AnalyzePage() {
                   Privacy Protected
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground">Supported formats: MP3, WAV, MP4, MOV. Max size: 50MB.</p>
+              <p className="text-sm text-muted-foreground">Supported formats: MP3, WAV, MP4, MOV. Max size: 4.5MB (Vercel Free Tier Limit).</p>
 
               {/* Privacy Notice */}
               <div className="flex items-start gap-2 p-3 bg-muted/40 border border-muted rounded-lg text-xs text-muted-foreground">
