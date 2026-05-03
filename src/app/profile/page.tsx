@@ -31,7 +31,6 @@ export default function ProfilePage() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [editName, setEditName] = useState("");
-  const [editAvatarUrl, setEditAvatarUrl] = useState("");
   const [editContactNo, setEditContactNo] = useState("");
 
   const fetchInterviews = useCallback(async (userId: string) => {
@@ -61,7 +60,6 @@ export default function ProfilePage() {
 
       setUser(user);
       setEditName(user.user_metadata?.full_name || "");
-      setEditAvatarUrl(user.user_metadata?.avatar_url || "");
       setEditContactNo(user.user_metadata?.contact_no || "");
       await fetchInterviews(user.id);
       setLoading(false);
@@ -74,7 +72,6 @@ export default function ProfilePage() {
     const { data: { user: updatedUser }, error } = await supabase.auth.updateUser({
       data: {
         full_name: editName,
-        avatar_url: editAvatarUrl,
         contact_no: editContactNo,
       }
     });
@@ -127,12 +124,7 @@ export default function ProfilePage() {
         <div className="mb-12 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 bg-card border rounded-2xl p-6 md:p-8 shadow-sm">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             <div className="w-24 h-24 rounded-full bg-primary/10 border-4 border-background shadow-md overflow-hidden flex-shrink-0 flex items-center justify-center text-primary">
-              {user?.user_metadata?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <User className="w-10 h-10" />
-              )}
+              <User className="w-10 h-10" />
             </div>
             
             <div className="flex flex-col items-center sm:items-start text-center sm:text-left pt-1">
@@ -198,18 +190,6 @@ export default function ProfilePage() {
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     placeholder="e.g. +1 234 567 890"
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold">Profile Picture URL</label>
-                  <input 
-                    type="url" 
-                    value={editAvatarUrl}
-                    onChange={(e) => setEditAvatarUrl(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="https://example.com/my-photo.jpg"
-                  />
-                  <p className="text-xs text-muted-foreground">Paste a direct link to an image (e.g., from LinkedIn or Imgur).</p>
                 </div>
               </div>
 
