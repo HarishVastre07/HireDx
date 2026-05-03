@@ -11,7 +11,12 @@ export async function analyzeInterviewRecording(filePath: string, mimeType: stri
   const ai = getAI();
 
   // 1. Upload via Gemini File API
-  let uploadedFile = await ai.files.upload({ file: filePath, mimeType: mimeType });
+  let uploadedFile = await ai.files.upload({
+    file: filePath,
+    config: {
+      mimeType: mimeType
+    }
+  });
 
   // 2. Poll until video processing is complete
   if (mimeType.startsWith('video/')) {
