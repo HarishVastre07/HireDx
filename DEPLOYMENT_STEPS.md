@@ -26,6 +26,7 @@ Supabase provides your database, authentication, and backend infrastructure.
           created_at TIMESTAMPTZ DEFAULT now(),
           user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
           role_target TEXT,
+          overall_score INTEGER,
           report_data JSONB NOT NULL
       );
 

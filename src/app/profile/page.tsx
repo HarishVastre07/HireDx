@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { createClient } from "@/utils/supabase/client";
-import { Loader2, Trash2, ExternalLink, Calendar, Target, Activity, RefreshCw } from "lucide-react";
+import { Loader2, Trash2, ExternalLink, Calendar, Target, Activity, RefreshCw, User, Mail, Phone, Edit2, X, Save } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,6 +26,13 @@ export default function ProfilePage() {
   const [interviews, setInterviews] = useState<InterviewRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Profile Edit State
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editAvatarUrl, setEditAvatarUrl] = useState("");
+  const [editContactNo, setEditContactNo] = useState("");
 
   const fetchInterviews = useCallback(async (userId: string) => {
     setFetchError(null);
@@ -53,11 +60,33 @@ export default function ProfilePage() {
       }
 
       setUser(user);
+      setEditName(user.user_metadata?.full_name || "");
+      setEditAvatarUrl(user.user_metadata?.avatar_url || "");
+      setEditContactNo(user.user_metadata?.contact_no || "");
       await fetchInterviews(user.id);
       setLoading(false);
     }
     init();
   }, [router, fetchInterviews]);
+
+  const handleSaveProfile = async () => {
+    setIsSavingProfile(true);
+    const { data: { user: updatedUser }, error } = await supabase.auth.updateUser({
+      data: {
+        full_name: editName,
+        avatar_url: editAvatarUrl,
+        contact_no: editContactNo,
+      }
+    });
+
+    if (error) {
+      alert("Failed to update profile: " + error.message);
+    } else {
+      setUser(updatedUser);
+      setIsEditingProfile(false);
+    }
+    setIsSavingProfile(false);
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Permanently delete this interview record? This cannot be undone.")) return;
@@ -95,18 +124,104 @@ export default function ProfilePage() {
       <main className="flex-1 container max-w-6xl mx-auto px-4 py-12">
 
         {/* Header */}
-        <div className="mb-12 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-heading font-bold mb-2">My Profile</h1>
-            <p className="text-muted-foreground flex items-center gap-2 text-sm">
-              <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse" />
-              {user?.email}
-            </p>
+        <div className="mb-12 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 bg-card border rounded-2xl p-6 md:p-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <div className="w-24 h-24 rounded-full bg-primary/10 border-4 border-background shadow-md overflow-hidden flex-shrink-0 flex items-center justify-center text-primary">
+              {user?.user_metadata?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-10 h-10" />
+              )}
+            </div>
+            
+            <div className="flex flex-col items-center sm:items-start text-center sm:text-left pt-1">
+              <h1 className="text-3xl font-heading font-bold mb-2">
+                {user?.user_metadata?.full_name || "New Candidate"}
+              </h1>
+              
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <p className="flex items-center gap-2 justify-center sm:justify-start">
+                  <Mail className="w-4 h-4" />
+                  {user?.email}
+                  <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse ml-1" title="Online" />
+                </p>
+                {user?.user_metadata?.contact_no && (
+                  <p className="flex items-center gap-2 justify-center sm:justify-start">
+                    <Phone className="w-4 h-4" />
+                    {user.user_metadata.contact_no}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
-          <Link href="/analyze">
-            <Button className="shadow-lg shadow-primary/20">+ New Analysis</Button>
-          </Link>
+
+          <div className="flex flex-col gap-3 w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto gap-2" onClick={() => setIsEditingProfile(true)}>
+              <Edit2 className="w-4 h-4" /> Edit Profile
+            </Button>
+            <Link href="/analyze" className="w-full sm:w-auto">
+              <Button className="w-full sm:w-auto shadow-lg shadow-primary/20">+ New Analysis</Button>
+            </Link>
+          </div>
         </div>
+
+        {/* Edit Profile Modal */}
+        {isEditingProfile && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <Card className="w-full max-w-md p-6 shadow-xl border-primary/20 relative animate-in fade-in zoom-in duration-200">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold font-heading">Edit Profile</h2>
+                <Button variant="ghost" size="icon" onClick={() => setIsEditingProfile(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold">Full Name</label>
+                  <input 
+                    type="text" 
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="e.g. John Doe"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold">Contact Number</label>
+                  <input 
+                    type="tel" 
+                    value={editContactNo}
+                    onChange={(e) => setEditContactNo(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="e.g. +1 234 567 890"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold">Profile Picture URL</label>
+                  <input 
+                    type="url" 
+                    value={editAvatarUrl}
+                    onChange={(e) => setEditAvatarUrl(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="https://example.com/my-photo.jpg"
+                  />
+                  <p className="text-xs text-muted-foreground">Paste a direct link to an image (e.g., from LinkedIn or Imgur).</p>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setIsEditingProfile(false)}>Cancel</Button>
+                <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
+                  {isSavingProfile ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
+                </Button>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Section heading */}
         <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-foreground/80">
